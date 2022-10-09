@@ -266,8 +266,10 @@ class Properties:
 
             # we have to peek into the value to get the correct type for dates
             elif field_type == "date":
+                if not prop["date"]:
+                    result.append(Date(field=field))
                 # TODO: timezone
-                if "end" not in prop["date"]:
+                elif "end" not in prop["date"]:
                     if start := prop["date"].get("start"):
                         if len(start) > 10:
                             result.append(DateTime(field=field))
