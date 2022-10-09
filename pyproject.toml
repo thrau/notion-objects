@@ -1,0 +1,26 @@
+[build-system]
+requires = ['setuptools', 'wheel']
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line_length = 100
+include = '((notion_objects)/.*\.py$|tests/.*\.py$)'
+#extend_exclude = '()'
+
+[tool.isort]
+profile = 'black'
+#extend_skip = []
+line_length = 100
+
+[tool.coverage.run]
+relative_files = true
+source = [
+    "notion_objects/"
+]
+[tool.coverage.report]
+exclude_lines = [
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "return NotImplemented",
+    "def __repr__",
+]
