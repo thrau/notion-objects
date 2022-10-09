@@ -1,5 +1,10 @@
 # notion-objects
 
+[![Build Status](https://github.com/thrau/notion-objects/actions/workflows/test.yml/badge.svg)](https://github.com/thrau/notion-objects/actions/workflows/test.yml)
+[![PyPI Version](https://badge.fury.io/py/notion-objects.svg)](https://badge.fury.io/py/notion-objects)
+[![PyPI License](https://img.shields.io/pypi/l/notion-objects.svg)](https://img.shields.io/pypi/l/notion-objects.svg)
+[![Codestyle](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 A Python library that makes it easy to work with notion databases.
 
 ## Usage
