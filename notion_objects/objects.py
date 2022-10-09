@@ -1,28 +1,64 @@
 import inspect
 from datetime import datetime
+from typing import ClassVar, List
 
-from .attributes import RootAttribute
+from .properties import Properties, Property, RootProperty
 
 
-class NotionObject:
+class NotionClass(type):
+    __properties__: List[Property]
+
+    def __new__(cls, name, bases, dct):
+        new_cls = super().__new__(cls, name, bases, dct)
+
+        # build property list
+        properties = []
+        for b in bases:
+            # get inherited properties
+            properties.extend([a for a in getattr(b, "properties", []) if isinstance(a, Property)])
+        # inspect the current class for properties
+        properties = [
+            prop for _, prop in inspect.getmembers(new_cls, lambda m: isinstance(m, Property))
+        ]
+        new_cls.__properties__ = properties
+        return new_cls
+
+
+class NotionObject(metaclass=NotionClass):
+    __properties__: ClassVar[List[Property]]
+
+    _obj: dict
+
+    def __init__(self, obj):
+        self._obj = obj
+
+    def to_dict(self):
+        result = {}
+
+        for prop in self.__properties__:
+            result[prop.attr] = getattr(self, prop.attr)
+
+        return result
+
+
+class DynamicNotionObject:
+    _properties: Properties
     _obj: dict
 
     def __init__(self, obj: dict):
         self._obj = obj
+        self._properties = Properties.parse(obj)
 
     def to_dict(self):
-        notion_attrs = getattr(self, "_notion_attrs_", {})
         result = {}
 
-        for cls in reversed(inspect.getmro(self.__class__)):
-            if cls in notion_attrs:
-                for attr in notion_attrs[cls]:
-                    result[attr.attr] = getattr(self, attr.attr)
+        for prop in self._properties:
+            result[prop.attr] = prop.get(prop.field, self._obj)
 
         return result
 
 
 class Page(NotionObject):
-    id: str = RootAttribute("id")
-    created_time: datetime = RootAttribute()
-    last_edited_time: datetime = RootAttribute()
+    id: str = RootProperty("id")
+    created_time: datetime = RootProperty()
+    last_edited_time: datetime = RootProperty()

@@ -1,3 +1,4 @@
 # notion-objects
 
-A Python library to work with objects retrieved from the notion API
+A Python library that makes it easy to work with notion databases.
+
