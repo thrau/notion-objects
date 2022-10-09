@@ -32,5 +32,5 @@ response = requests.post("https://api.notion.com/v1/databases/{database_id}/quer
 for item in response.json()['results']:
     t = Task(item)
     print(t.task)  # access attribute values
-    print(t.to_dict())  # coverts the record to a dictionary
+    print(t.to_json())  # prints the record in the json format show earlier
 ```

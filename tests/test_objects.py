@@ -107,3 +107,22 @@ def test_dynamic_notion_object_to_dict():
         "Phone": "+4369912345678",
         "Tags": ["foobar", "baz"],
     }
+
+
+def test_dynamic_notion_object_to_json():
+    data = json.loads(query_result)["results"]
+
+    o = DynamicNotionObject(data[1])
+    assert json.loads(o.to_json()) == {
+        "id": "5ddfefe3-9868-4dd9-88bf-5c9849f8b4e9",
+        "created_time": "2022-10-08T22:29:00+00:00",
+        "last_edited_time": "2022-10-09T00:48:00+00:00",
+        "Created time": "2022-10-08T22:29:00+00:00",
+        "Date": ["2022-10-09", "2022-10-09"],
+        "Name": "A page",
+        "Person": ["Thomas"],
+        "Status": "In progress",
+        "My select": "a",
+        "Phone": "+4369912345678",
+        "Tags": ["foobar", "baz"],
+    }

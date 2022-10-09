@@ -1,7 +1,9 @@
 import inspect
+import json
 from datetime import datetime
 from typing import ClassVar, List
 
+from .encode import JSONEncoder
 from .properties import Properties, Property, RootProperty
 
 
@@ -24,7 +26,15 @@ class NotionClass(type):
         return new_cls
 
 
-class NotionObject(metaclass=NotionClass):
+class _ConverterMixin:
+    def to_dict(self) -> dict:
+        raise NotImplementedError
+
+    def to_json(self):
+        return json.dumps(self.to_dict(), cls=JSONEncoder)
+
+
+class NotionObject(_ConverterMixin, metaclass=NotionClass):
     __properties__: ClassVar[List[Property]]
 
     _obj: dict
@@ -32,7 +42,7 @@ class NotionObject(metaclass=NotionClass):
     def __init__(self, obj):
         self._obj = obj
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = {}
 
         for prop in self.__properties__:
@@ -41,7 +51,7 @@ class NotionObject(metaclass=NotionClass):
         return result
 
 
-class DynamicNotionObject:
+class DynamicNotionObject(_ConverterMixin):
     _properties: Properties
     _obj: dict
 
@@ -49,7 +59,7 @@ class DynamicNotionObject:
         self._obj = obj
         self._properties = Properties.parse(obj)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         result = {}
 
         for prop in self._properties:
