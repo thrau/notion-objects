@@ -1,5 +1,4 @@
 import copy
-import json
 from typing import Callable, Generic, Iterable, Type, TypeVar, Union
 
 from notion_client import Client
@@ -25,7 +24,6 @@ class IterableQueryExecutor(Iterable[DatabaseRecord]):
 
         while True:
             result = self.client.databases.query(**query)
-            print(json.dumps(result))
 
             for item in result["results"]:
                 yield item
