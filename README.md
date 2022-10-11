@@ -71,7 +71,7 @@ for page in result:
 ```
 
 You could also use `DynamicNotionObject` if you're too lazy to create a model for your database. notion-objects will map
-the datatypes in a best-effort way. You can also iterate directly over the database to fetch all records:
+the data types in a best-effort way. You can also iterate directly over the database to fetch all records:
 
 ```python
 from notion_objects import Database, DynamicNotionObject

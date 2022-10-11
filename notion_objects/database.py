@@ -4,7 +4,7 @@ from typing import Callable, Generic, Iterable, Type, TypeVar, Union
 
 from notion_client import Client
 
-from notion_objects import NotionObject
+from notion_objects.objects import NotionObject
 
 _N = TypeVar("_N", bound=NotionObject)
 
