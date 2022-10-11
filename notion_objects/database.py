@@ -1,32 +1,71 @@
-from typing import Callable, Generator, Generic, Iterable, TypeVar
+import copy
+import json
+from typing import Callable, Generic, Iterable, Type, TypeVar, Union
 
 from notion_client import Client
 
-from notion_objects import DynamicNotionObject, NotionObject
+from notion_objects import NotionObject
 
 _N = TypeVar("_N", bound=NotionObject)
 
+DatabaseRecord = dict
+Query = dict
 
-class Database(Generic[_N], Iterable[_N]):
-    def __init__(
-        self, database_id: str, client: Client, type: Callable[[dict], _N] = DynamicNotionObject
-    ):
-        self.type = type
+
+class IterableQueryExecutor(Iterable[DatabaseRecord]):
+    client: Client
+    query: Query
+
+    def __init__(self, client: Client, query: Query):
         self.client = client
-        self.database_id = database_id
+        self.query = query
 
-    def __iter__(self):
-        return self.iterator(query={"page_size": 100})
+    def execute(self) -> Iterable[DatabaseRecord]:
+        query = self.query
 
-    def iterator(self, query) -> Generator[_N, None, None]:
-        factory = self.type
         while True:
-            result = self.client.databases.query(database_id=self.database_id, **query)
+            result = self.client.databases.query(**query)
+            print(json.dumps(result))
 
             for item in result["results"]:
-                yield factory(item)
+                yield item
 
             if not result["has_more"]:
                 return
 
             query["start_cursor"] = result["next_cursor"]
+
+    def __iter__(self):
+        return self.execute()
+
+
+class Database(Generic[_N], Iterable[_N]):
+    def __init__(
+        self,
+        mapped_type: Union[Type[_N], Callable[[DatabaseRecord], _N]],
+        database_id: str,
+        client: Client,
+    ):
+        self.type = mapped_type
+        self.client = client
+        self.database_id = database_id
+
+    def __iter__(self):
+        return self.query(query={"page_size": 100})
+
+    def query(self, query: Query = None) -> Iterable[_N]:
+        factory = self.type
+
+        if query is None:
+            query = {}
+        else:
+            query = copy.deepcopy(query)
+
+        if "database_id" in query:
+            if query["database_id"] != self.database_id:
+                raise ValueError("database id in query does not match that of this database")
+        else:
+            query["database_id"] = self.database_id
+
+        for item in IterableQueryExecutor(self.client, query=query):
+            yield factory(item)
