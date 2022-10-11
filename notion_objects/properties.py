@@ -3,8 +3,6 @@ from typing import Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
 import dateutil.parser
 
-_T = TypeVar("_T")
-
 property_types = [
     "title",
     "rich_text",  # TODO
@@ -27,6 +25,8 @@ property_types = [
     "last_edited_by",  # TODO
     "status",
 ]
+
+_T = TypeVar("_T")
 
 
 class Property(Generic[_T]):
@@ -171,10 +171,12 @@ class DateRange(Property[Tuple[Optional[date], Optional[date]]]):
         start, end = None, None
 
         if container := obj["properties"][field]["date"]:
-            start = dateutil.parser.parse(container["start"]).date()
+            if date_str := container["start"]:
+                start = dateutil.parser.parse(date_str).date()
 
         if container := obj["properties"][field]["date"]:
-            end = dateutil.parser.parse(container["end"]).date()
+            if date_str := container["end"]:
+                end = dateutil.parser.parse(date_str).date()
 
         return start, end
 
@@ -185,7 +187,8 @@ class DateRangeStart(Property[Optional[date]]):
         if container is None:
             return None
         else:
-            return dateutil.parser.parse(container["start"]).date()
+            if start := container["start"]:
+                return dateutil.parser.parse(start).date()
 
 
 class DateRangeEnd(Property[Optional[date]]):
@@ -194,7 +197,8 @@ class DateRangeEnd(Property[Optional[date]]):
         if container is None:
             return None
         else:
-            return dateutil.parser.parse(container["end"]).date()
+            if end := container["end"]:
+                return dateutil.parser.parse(end).date()
 
 
 class Person(Property[Optional[str]]):
@@ -266,8 +270,10 @@ class Properties:
 
             # we have to peek into the value to get the correct type for dates
             elif field_type == "date":
+                if not prop["date"]:
+                    result.append(Date(field=field))
                 # TODO: timezone
-                if "end" not in prop["date"]:
+                elif "end" not in prop["date"]:
                     if start := prop["date"].get("start"):
                         if len(start) > 10:
                             result.append(DateTime(field=field))
@@ -276,7 +282,7 @@ class Properties:
                     else:
                         result.append(Date(field=field))
                 else:
-                    if len(prop["date"].get("end")) > 10:
+                    if len(prop["date"].get("end") or "") > 10:
                         result.append(DateTimeRange(field=field))
                     else:
                         result.append(DateRange(field=field))
