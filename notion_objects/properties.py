@@ -282,7 +282,7 @@ class Properties:
                     else:
                         result.append(Date(field=field))
                 else:
-                    if len(prop["date"].get("end")) > 10:
+                    if len(prop["date"].get("end") or "") > 10:
                         result.append(DateTimeRange(field=field))
                     else:
                         result.append(DateRange(field=field))

@@ -3,7 +3,7 @@ from typing import Callable, Generic, Iterable, Type, TypeVar, Union
 
 from notion_client import Client
 
-from notion_objects.objects import NotionObject
+from .objects import DynamicNotionObject, NotionObject
 
 _N = TypeVar("_N", bound=NotionObject)
 
@@ -40,7 +40,7 @@ class IterableQueryExecutor(Iterable[DatabaseRecord]):
 class Database(Generic[_N], Iterable[_N]):
     def __init__(
         self,
-        mapped_type: Union[Type[_N], Callable[[DatabaseRecord], _N]],
+        mapped_type: Union[Type[_N], Type[DynamicNotionObject], Callable[[DatabaseRecord], _N]],
         database_id: str,
         client: Client,
     ):
