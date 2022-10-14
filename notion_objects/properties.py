@@ -5,7 +5,7 @@ import dateutil.parser
 
 property_types = [
     "title",
-    "rich_text",  # TODO
+    "rich_text",
     "number",
     "select",
     "multi_select",
@@ -59,6 +59,15 @@ class Property(Generic[_T]):
         else:
             return self.get(self.field, instance)
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        if self.field == self.attr:
+            return f"{self.__class__.__name__}({self.field})"
+        else:
+            return f"{self.__class__.__name__}({self.field} -> {self.attr})"
+
 
 class RootProperty(Property[_T]):
     def get(self, field: str, obj: dict):
@@ -70,18 +79,28 @@ class RootProperty(Property[_T]):
 
 class TitlePlainText(Property[str]):
     def get(self, field: str, obj: dict) -> str:
-        try:
-            return obj["properties"][field]["title"][0]["plain_text"]
-        except IndexError:
-            return ""
+        items = obj["properties"][field]["title"]
+        if items:
+            return "".join([item["plain_text"] for item in items])
+        return ""
 
 
 class TitleText(Property[str]):
     def get(self, field: str, obj: dict) -> str:
-        try:
-            return obj["properties"][field]["title"][0]["text"]["content"]
-        except IndexError:
-            return ""
+        items = obj["properties"][field]["title"]
+        if items:
+            return "".join([item["text"]["content"] for item in items])
+        return ""
+
+
+class Text(Property[str]):
+    def get(self, field: str, obj: dict) -> str:
+        items = obj["properties"][field]["rich_text"]
+
+        if items:
+            return "".join([item["plain_text"] for item in items])
+
+        return ""
 
 
 class Email(Property[Optional[str]]):
@@ -158,10 +177,12 @@ class DateTimeRange(Property[Tuple[Optional[datetime], Optional[datetime]]]):
         start, end = None, None
 
         if container := obj["properties"][field]["date"]:
-            start = dateutil.parser.parse(container["start"])
+            if date_str := container["start"]:
+                start = dateutil.parser.parse(date_str)
 
         if container := obj["properties"][field]["date"]:
-            end = dateutil.parser.parse(container["end"])
+            if date_str := container["end"]:
+                end = dateutil.parser.parse(date_str)
 
         return start, end
 
@@ -229,6 +250,7 @@ class Properties:
         "title": TitleText,
         "created_time": CreatedTime,
         "select": Select,
+        "rich_text": Text,
         "multi_select": MultiSelect,
         "people": People,
         "phone_number": Phone,
@@ -271,7 +293,10 @@ class Properties:
             # we have to peek into the value to get the correct type for dates
             elif field_type == "date":
                 if not prop["date"]:
-                    result.append(Date(field=field))
+                    # in most cases we can't make any assumptions about the date format,
+                    # so we just fall back to the most general case, which is DateTimeRange.
+                    result.append(DateTimeRange(field=field))
+
                 # TODO: timezone
                 elif "end" not in prop["date"]:
                     if start := prop["date"].get("start"):
@@ -288,3 +313,9 @@ class Properties:
                         result.append(DateRange(field=field))
 
         return Properties(result)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f"Properties({self.properties})"
