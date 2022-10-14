@@ -1,7 +1,7 @@
 import inspect
 import json
 from datetime import datetime
-from typing import ClassVar, List
+from typing import Iterable, List
 
 from .encode import JSONEncoder
 from .properties import Properties, Property, RootProperty
@@ -28,44 +28,50 @@ class NotionClass(type):
 
 class _ConverterMixin:
     def to_dict(self) -> dict:
-        raise NotImplementedError
+        result = {}
+
+        for prop in self._get_properties():
+            result[prop.attr] = getattr(self, prop.attr)
+
+        return result
 
     def to_json(self):
         return json.dumps(self.to_dict(), cls=JSONEncoder)
 
+    def _get_properties(self) -> Iterable[Property]:
+        raise NotImplementedError
+
 
 class NotionObject(_ConverterMixin, metaclass=NotionClass):
-    __properties__: ClassVar[List[Property]]
-
     _obj: dict
 
     def __init__(self, obj):
         self._obj = obj
 
-    def to_dict(self) -> dict:
-        result = {}
-
-        for prop in self.__properties__:
-            result[prop.attr] = getattr(self, prop.attr)
-
-        return result
+    def _get_properties(self) -> Iterable[Property]:
+        return self.__properties__
 
 
 class DynamicNotionObject(_ConverterMixin):
     _properties: Properties
     _obj: dict
 
-    def __init__(self, obj: dict):
+    def __init__(self, obj: dict, properties: Properties = None):
         self._obj = obj
-        self._properties = Properties.parse(obj)
+        self._properties = properties or Properties.parse(obj)
+        self._properties_by_attr = {prop.attr: prop for prop in self._properties}
 
-    def to_dict(self) -> dict:
-        result = {}
+    def __getattr__(self, item):
+        try:
+            if item in self._properties_by_attr:
+                prop = self._properties_by_attr[item]
+                return prop.get(prop.field, self._obj)
+        except KeyError:
+            pass
+        raise AttributeError(item)
 
-        for prop in self._properties:
-            result[prop.attr] = prop.get(prop.field, self._obj)
-
-        return result
+    def _get_properties(self) -> Iterable[Property]:
+        return self._properties
 
 
 class Page(NotionObject):
