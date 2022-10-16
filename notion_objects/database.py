@@ -100,6 +100,13 @@ class Database(Generic[_N], Iterable[_N]):
         """
         return Properties.parse(self._database_object())
 
+    @cached_property
+    def title(self):
+        """
+        Returns the plain text name of the database.
+        """
+        return "".join([text["plain_text"] for text in self._database_object()["title"]])
+
     def _from_database_properties(self, obj: dict) -> DynamicNotionObject:
         return DynamicNotionObject(obj, self.properties)
 
