@@ -72,11 +72,16 @@ class Property(Generic[_T]):
 
     def __set__(self, instance, value):
         try:
+            # keep track of changes
             changes = instance.__changes__
+            self.set(self.field, value, changes)
         except AttributeError:
             return
 
-        self.set(self.field, value, changes)
+        # also set the underlying object
+        if self.object_locator:
+            instance = getattr(instance, self.object_locator)
+        self.set(self.field, value, instance["properties"])
 
     def __repr__(self):
         return self.__str__()

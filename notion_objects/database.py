@@ -1,12 +1,13 @@
 import copy
 import typing
+import uuid
 from functools import cached_property, lru_cache
-from typing import Callable, Generic, Iterable, Type, TypeVar, Union
+from typing import Callable, Generic, Iterable, Optional, Type, TypeVar, Union
 
-from notion_client import Client
+from notion_client import APIResponseError, Client
 
 from .objects import DynamicNotionObject, NotionObject
-from .properties import Properties
+from .properties import ChangeTracker, Properties
 
 _N = TypeVar("_N", bound=NotionObject)
 
@@ -105,6 +106,31 @@ class Database(Generic[_N], Iterable[_N]):
     @lru_cache()
     def _database_object(self):
         return self.client.databases.retrieve(self.database_id)
+
+    def find_by_id(self, page_id: str) -> Optional[_N]:
+        try:
+            page = self.client.pages.retrieve(page_id)
+        except APIResponseError as e:
+            if e.status == 404:
+                return None
+            raise
+
+        if uuid.UUID(page["parent"]["database_id"]) != uuid.UUID(self.database_id):
+            # page exists but does not belong to this database
+            return None
+
+        return self.type(page)
+
+    def update(self, page: ChangeTracker):
+        try:
+            page_id = page.id
+        except AttributeError:
+            raise ValueError("page object needs to have an attribute 'id'")
+
+        if not page.__changes__:
+            return
+
+        self.client.pages.update(page_id, properties=page.__changes__)
 
     def query(self, query: Query = None) -> Iterable[_N]:
         """

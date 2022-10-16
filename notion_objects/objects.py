@@ -54,8 +54,24 @@ class DynamicNotionObject(_ConverterMixin, ChangeTracker):
             pass
         raise AttributeError(item)
 
+    def __getitem__(self, item):
+        return self.__getattr__(item)
+
+    def __setitem__(self, key, value):
+        try:
+            if key in self._properties_by_attr:
+                prop = self._properties_by_attr[key]
+                prop.set(prop.field, value, self._obj["properties"])
+                return prop.set(prop.field, value, self.__changes__)
+        except KeyError:
+            pass
+        raise AttributeError(key)
+
     def _get_properties(self) -> Iterable[Property]:
         return self._properties
+
+    def __str__(self):
+        return f"DynamicNotionObject({str(self.to_dict())})"
 
 
 class Page(NotionObject):
