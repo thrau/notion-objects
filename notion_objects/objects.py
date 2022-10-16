@@ -1,10 +1,9 @@
 import inspect
-import json
 from datetime import datetime
 from typing import Iterable, List
 
-from .encode import JSONEncoder
-from .properties import Properties, Property, RootProperty
+from .encode import _ConverterMixin
+from .properties import ChangeTracker, Properties, Property, RootProperty
 
 
 class NotionClass(type):
@@ -26,23 +25,7 @@ class NotionClass(type):
         return new_cls
 
 
-class _ConverterMixin:
-    def to_dict(self) -> dict:
-        result = {}
-
-        for prop in self._get_properties():
-            result[prop.attr] = getattr(self, prop.attr)
-
-        return result
-
-    def to_json(self):
-        return json.dumps(self.to_dict(), cls=JSONEncoder)
-
-    def _get_properties(self) -> Iterable[Property]:
-        raise NotImplementedError
-
-
-class NotionObject(_ConverterMixin, metaclass=NotionClass):
+class NotionObject(_ConverterMixin, ChangeTracker, metaclass=NotionClass):
     _obj: dict
 
     def __init__(self, obj):
@@ -52,11 +35,12 @@ class NotionObject(_ConverterMixin, metaclass=NotionClass):
         return self.__properties__
 
 
-class DynamicNotionObject(_ConverterMixin):
+class DynamicNotionObject(_ConverterMixin, ChangeTracker):
     _properties: Properties
     _obj: dict
 
     def __init__(self, obj: dict, properties: Properties = None):
+        super(DynamicNotionObject, self).__init__()
         self._obj = obj
         self._properties = properties or Properties.parse(obj)
         self._properties_by_attr = {prop.attr: prop for prop in self._properties}

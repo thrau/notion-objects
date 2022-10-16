@@ -66,7 +66,11 @@ class Database(Generic[_N], Iterable[_N]):
     def __init__(self, *args, **kwargs):
         if len(args) > 0 and type(args[0]) == str:
             kwargs["database_id"] = args[0]
-            self._construct(*args[1:], **kwargs)
+            if len(args) > 1:
+                kwargs["client"] = args[1]
+            if len(args) > 2:
+                kwargs["mapped_type"] = args[2]
+            self._construct(**kwargs)
         else:
             self._construct(*args, **kwargs)
 

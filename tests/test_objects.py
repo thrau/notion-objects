@@ -59,11 +59,30 @@ def test_access_properties():
     assert o.Tags == []
 
 
+def test_set_properties():
+    data = json.loads(query_result)["results"]
+
+    o = SampleObject(data[1])
+
+    o.status = "Closed"
+    print(o.__changes__)
+
+
 def test_to_dict():
     data = json.loads(query_result)["results"]
 
     o = SampleObject(data[1])
     assert o.to_dict() == {
+        "name": "A page",
+        "person": "Thomas",
+        "status": "In progress",
+        "my_select": "a",
+        "date_end": date(2022, 10, 9),
+        "date_start": date(2022, 10, 9),
+        "Phone": "+4369912345678",
+        "Tags": ["foobar", "baz"],
+    }
+    assert o.to_dict(flat=True) == {
         "name": "A page",
         "person": "Thomas",
         "status": "In progress",
@@ -99,7 +118,22 @@ def test_dynamic_notion_object_to_dict():
         "created_time": datetime(2022, 10, 8, 22, 29, tzinfo=tzutc()),
         "last_edited_time": datetime(2022, 10, 9, 0, 48, tzinfo=tzutc()),
         "Created time": datetime(2022, 10, 8, 22, 29, tzinfo=tzutc()),
-        "Date": (date(2022, 10, 9), date(2022, 10, 9)),
+        "Date": {"start": date(2022, 10, 9), "end": date(2022, 10, 9)},
+        "Name": "A page",
+        "Person": ["Thomas"],
+        "Status": "In progress",
+        "My select": "a",
+        "Phone": "+4369912345678",
+        "Tags": ["foobar", "baz"],
+    }
+
+    assert o.to_dict(flat=True) == {
+        "id": "5ddfefe3-9868-4dd9-88bf-5c9849f8b4e9",
+        "created_time": datetime(2022, 10, 8, 22, 29, tzinfo=tzutc()),
+        "last_edited_time": datetime(2022, 10, 9, 0, 48, tzinfo=tzutc()),
+        "Created time": datetime(2022, 10, 8, 22, 29, tzinfo=tzutc()),
+        "Date_start": date(2022, 10, 9),
+        "Date_end": date(2022, 10, 9),
         "Name": "A page",
         "Person": ["Thomas"],
         "Status": "In progress",
@@ -118,7 +152,22 @@ def test_dynamic_notion_object_to_json():
         "created_time": "2022-10-08T22:29:00+00:00",
         "last_edited_time": "2022-10-09T00:48:00+00:00",
         "Created time": "2022-10-08T22:29:00+00:00",
-        "Date": ["2022-10-09", "2022-10-09"],
+        "Date": {"start": "2022-10-09", "end": "2022-10-09"},
+        "Name": "A page",
+        "Person": ["Thomas"],
+        "Status": "In progress",
+        "My select": "a",
+        "Phone": "+4369912345678",
+        "Tags": ["foobar", "baz"],
+    }
+
+    assert json.loads(o.to_json(flat=True)) == {
+        "id": "5ddfefe3-9868-4dd9-88bf-5c9849f8b4e9",
+        "created_time": "2022-10-08T22:29:00+00:00",
+        "last_edited_time": "2022-10-09T00:48:00+00:00",
+        "Created time": "2022-10-08T22:29:00+00:00",
+        "Date_start": "2022-10-09",
+        "Date_end": "2022-10-09",
         "Name": "A page",
         "Person": ["Thomas"],
         "Status": "In progress",
