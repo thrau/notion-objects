@@ -19,6 +19,7 @@ class DateValue:
 class UserValue:
     id: str
     name: Optional[str] = None
+    email: Optional[str] = None
 
     def __str__(self):
         if self.name is not None:

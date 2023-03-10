@@ -338,7 +338,7 @@ class PeopleProperty(Property[List[UserValue]]):
     @staticmethod
     def get_value(field: str, obj: dict) -> List[UserValue]:
         return [
-            UserValue(item["id"], item.get("name"))
+            UserValue(item["id"], item.get("name"), item.get("person", {}).get("email"))
             for item in obj["properties"][field].get("people", [])
         ]
 
