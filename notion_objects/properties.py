@@ -279,8 +279,8 @@ class MultiSelect(Property[List[str]]):
     def get(self, field: str, obj: dict) -> List[str]:
         return [s["name"] for s in obj["properties"][field].get("multi_select", [])]
 
-    def set(self, field: str, value: List[str], obj: dict):
-        obj[field] = {"multi_select": [{"name": v} for v in value]}
+    def set(self, field: str, value: Optional[List[str]], obj: dict):
+        obj[field] = {"multi_select": [{"name": v} for v in value] if value is not None else None}
 
 
 class Status(Property[Optional[str]]):
@@ -488,7 +488,7 @@ class PeopleProperty(Property[List[UserValue]]):
         ]
 
     @staticmethod
-    def set_value(field: str, value: List[Union[str, UserValue]], obj: dict):
+    def set_value(field: str, value: Optional[List[Union[str, UserValue]]], obj: dict):
         if not value:
             obj[field] = {"people": []}
             return
@@ -512,8 +512,8 @@ class Person(Property[Optional[str]]):
 
         return people[0].name or people[0].id
 
-    def set(self, field: str, value: str, obj: dict):
-        PeopleProperty.set_value(field, [value], obj)
+    def set(self, field: str, value: Optional[str], obj: dict):
+        PeopleProperty.set_value(field, [value] if value is not None else None, obj)
 
 
 class People(Property[List[str]]):

@@ -1,5 +1,6 @@
 import json
 from datetime import date, datetime, timedelta
+from typing import Tuple
 
 from dateutil.tz import tzutc
 
@@ -42,8 +43,8 @@ class SamplePage(Page, SampleObject):
 class MyDateObject(NotionObject):
     my_date: date = Date("Date")
     my_date_time: datetime = DateTime("DateTime")
-    my_date_range: tuple[date, date] = DateRange("DateRange")
-    my_date_time_range: tuple[datetime, datetime] = DateTimeRange("DateTimeRange")
+    my_date_range: Tuple[date, date] = DateRange("DateRange")
+    my_date_time_range: Tuple[datetime, datetime] = DateTimeRange("DateTimeRange")
 
 
 def test_access_properties():
@@ -75,8 +76,31 @@ def test_set_properties():
 
     o = SampleObject(data[1])
 
+    o.name = "MyName"
     o.status = "Closed"
-    print(o.__changes__)
+    o.my_select = "Foobar"
+    o.person = "d3d8f682-95a9-4513-b7fd-be52d7f6aa64"
+    o.Phone = "+123456789"
+    o.Tags = ["tag1", "tag2"]
+
+    assert o.__changes__ == {
+        "Name": {
+            "title": [{"plain_text": "MyName", "text": {"content": "MyName"}, "type": "text"}]
+        },
+        "Status": {"status": {"name": "Closed"}},
+        "My select": {"select": {"name": "Foobar"}},
+        "Person": {"people": [{"id": "d3d8f682-95a9-4513-b7fd-be52d7f6aa64", "object": "user"}]},
+        "Phone": {"phone_number": "+123456789"},
+        "Tags": {"multi_select": [{"name": "tag1"}, {"name": "tag2"}]},
+    }
+
+    # unset all attributes
+
+    o.status = None
+    o.my_select = None
+    o.person = None
+    o.Phone = None
+    o.Tags = None
 
 
 def test_to_dict():
