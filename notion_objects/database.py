@@ -101,7 +101,7 @@ class Database(Generic[_N], Iterable[_N]):
         return Properties.parse(self._database_object())
 
     @cached_property
-    def title(self):
+    def title(self) -> str:
         """
         Returns the plain text name of the database.
         """
@@ -138,6 +138,27 @@ class Database(Generic[_N], Iterable[_N]):
             return
 
         self.client.pages.update(page_id, properties=page.__changes__)
+
+    def create(self, page: _N) -> _N:
+        """
+        Creates the given page in the database. The page should be created as follows::
+
+            obj = MyPageObject.new()
+            obj.my_attr = "Some Value"
+
+            db_obj = database.create(obj)
+
+        :param page: the page object
+        :return: a new instance of the object managed in the database
+        """
+        return self.type(
+            self.client.pages.create(
+                parent={
+                    "database_id": self.database_id,
+                },
+                properties=page._obj["properties"],
+            )
+        )
 
     def query(self, query: Query = None) -> Iterable[_N]:
         """

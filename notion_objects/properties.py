@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 from functools import cached_property
-from typing import Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
 import dateutil.parser
 
@@ -28,6 +28,8 @@ property_types = [
     "last_edited_time",
     "last_edited_by",  # TODO
     "status",
+    "emoji",  # TODO
+    "external",  # TODO
 ]
 
 _T = TypeVar("_T")
@@ -45,12 +47,12 @@ class Property(Generic[_T]):
 
     def get(self, field: str, obj: dict) -> _T:
         raise NotImplementedError(
-            "get operation not implemented for property '%s'" % (self.__class__.__name__)
+            f"get operation not implemented for property '{self.__class__.__name__}'"
         )
 
     def set(self, field: str, value: _T, obj: dict):
         raise NotImplementedError(
-            "set operation not implemented for property '%s'" % (self.__class__.__name__)
+            f"set operation not implemented for property '{self.__class__.__name__}'"
         )
 
     def __set_name__(self, owner, name):
@@ -95,7 +97,7 @@ class Property(Generic[_T]):
 
 class ChangeTracker:
     @cached_property
-    def __changes__(self) -> Dict[str, Tuple[Property, object]]:
+    def __changes__(self) -> Dict[str, Any]:
         return {}
 
 
@@ -114,6 +116,17 @@ class TitlePlainText(Property[str]):
             return "".join([item["plain_text"] for item in items])
         return ""
 
+    def set(self, field: str, value: Optional[str], obj: dict):
+        obj[field] = {
+            "title": [
+                {
+                    "type": "text",
+                    "text": {"content": value},
+                    "plain_text": value,
+                }
+            ]
+        }
+
 
 class TitleText(Property[str]):
     def get(self, field: str, obj: dict) -> str:
@@ -121,6 +134,18 @@ class TitleText(Property[str]):
         if items:
             return "".join([item["text"]["content"] for item in items])
         return ""
+
+    def set(self, field: str, value: Optional[str], obj: dict):
+        # TODO: allow rich-text
+        obj[field] = {
+            "title": [
+                {
+                    "type": "text",
+                    "text": {"content": value},
+                    "plain_text": value,
+                }
+            ]
+        }
 
 
 class Text(Property[str]):
@@ -131,6 +156,31 @@ class Text(Property[str]):
             return "".join([item["plain_text"] for item in items])
 
         return ""
+
+    def set(self, field: str, value: Optional[str], obj: dict):
+        if value is None:
+            obj[field] = {"rich_text": []}
+            return
+
+        # TODO: allow rich-text
+        obj[field] = {
+            "rich_text": [
+                {
+                    "type": "text",
+                    "text": {"content": value},
+                    "annotations": {
+                        "bold": False,
+                        "italic": False,
+                        "strikethrough": False,
+                        "underline": False,
+                        "code": False,
+                        "color": "default",
+                    },
+                    "plain_text": value,
+                    "href": None,
+                }
+            ]
+        }
 
 
 class Email(Property[Optional[str]]):
@@ -161,7 +211,12 @@ class Number(Property[Optional[Union[float, int]]]):
     def get(self, field: str, obj: dict) -> Optional[Union[float, int]]:
         return obj["properties"][field]["number"]
 
-    def set(self, field: str, value: Union[float, int], obj: dict):
+    def set(self, field: str, value: Optional[Union[float, int, str]], obj: dict):
+        if isinstance(value, str):
+            if "." in value:
+                value = float(value)
+            else:
+                value = int(value)
         obj[field] = {"number": value}
 
 
@@ -170,7 +225,9 @@ class Integer(Property[Optional[int]]):
         if value := obj["properties"][field]["number"]:
             return int(value)
 
-    def set(self, field: str, value: Optional[int], obj: dict):
+    def set(self, field: str, value: Optional[Union[int, str]], obj: dict):
+        if isinstance(value, str):
+            value = int(value)
         obj[field] = {"number": value}
 
 
@@ -178,7 +235,7 @@ class Checkbox(Property[bool]):
     def get(self, field: str, obj: dict) -> bool:
         return obj["properties"][field]["checkbox"] in [True, "true"]
 
-    def set(self, field: str, value: bool, obj: dict):
+    def set(self, field: str, value: Optional[bool], obj: dict):
         obj[field] = {"checkbox": value}
 
 
@@ -248,7 +305,8 @@ class DateProperty(Property[DateValue]):
     @staticmethod
     def set_value(field: str, value: DateValue, obj: dict):
         if value.start is None and value.end is None:
-            obj[field] = {"date": {}}
+            obj[field] = {"date": None}
+            return
 
         obj[field] = {
             "date": {
@@ -270,12 +328,22 @@ class Date(Property[Optional[date]]):
             return dateutil.parser.parse(container["start"]).date()
         return None
 
+    def set(self, field: str, value: Optional[Union[date, str]], obj: dict):
+        if isinstance(value, str):
+            value = dateutil.parser.parse(value)
+        DateProperty.set_value(field, DateValue(start=value, include_time=False), obj)
+
 
 class DateTime(Property[Optional[datetime]]):
     def get(self, field: str, obj: dict) -> Optional[datetime]:
         if container := obj["properties"][field]["date"]:
             return dateutil.parser.parse(container["start"])
         return None
+
+    def set(self, field: str, value: Optional[Union[datetime, str]], obj: dict):
+        if isinstance(value, str):
+            value = dateutil.parser.parse(value)
+        DateProperty.set_value(field, DateValue(start=value, include_time=True), obj)
 
 
 class DateTimeRange(Property[Tuple[Optional[datetime], Optional[datetime]]]):

@@ -34,6 +34,21 @@ class NotionObject(_ConverterMixin, ChangeTracker, metaclass=NotionClass):
     def _get_properties(self) -> Iterable[Property]:
         return self.__properties__
 
+    @classmethod
+    def new(cls, **kwargs):
+        """
+        Creates a new unmanaged object.
+
+        :param kwargs: the object attributes
+        :return: a new object that can be added with Database.create(obj)
+        """
+        obj = cls({"properties": {}})
+
+        for k, v in kwargs.items():
+            setattr(obj, k, v)
+
+        return obj
+
 
 class DynamicNotionObject(_ConverterMixin, ChangeTracker):
     _properties: Properties

@@ -5,9 +5,16 @@
 [![PyPI License](https://img.shields.io/pypi/l/notion-objects.svg)](https://img.shields.io/pypi/l/notion-objects.svg)
 [![Codestyle](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-A Python library that makes it easy to work with notion databases. 🚧 under development!
+A Python library that makes it easy to work with notion databases, built on top of [notion-sdk-py](https://github.com/ramnes/notion-sdk-py).
+It provides a higher-level API with a data mapper, allowing you to define custom mappings between notion database records and your Python objects.
 
-## Usage
+With notion-objects you can:
+* [Transform properties](#defining-models)
+* [Query databases](#querying-databases)
+* [Update records](#updating-records)
+* [Create records](#creating-records)
+
+## User guide
 
 ### Defining models
 
@@ -15,7 +22,13 @@ Suppose your database `tasks` has four fields, the title `Task`, a date range `D
 You want to transform notion database queries into records of:
 
 ```json
-{"task": "my task", "date_start": "2022-01-01", "date_end": "2022-01-02", "assigned_to": "Thomas", "status": "In progress"}
+{
+  "task": "my task",
+  "date_start": "2022-01-01",
+  "date_end": "2022-01-02",
+  "assigned_to": "Thomas",
+  "status": "In progress"
+}
 ```
 
 First, declare a model that contains all the necessary transformations as descriptors:
@@ -28,6 +41,7 @@ class Task(NotionObject):
     assigned_to = Person("Assigned to")
     date_start = DateRangeStart("Date")
     date_end = DateRangeEnd("Date")
+    closed_at = Date("Closed at")
     status = Status("Status")
 ```
 
@@ -83,3 +97,39 @@ for record in database:
 ```
 
 **NOTE** not all types have yet been implemented. Type mapping is very rudimentary.
+
+### Updating records
+
+You can update database records by simply calling attributes with normal python assignments.
+The data mapper will map the types correctly to Notion's internal format.
+You can then call `Database.update(...)` to run an update API call.
+notion-objects keeps track of all the changes that were made to the object, and only sends the changes.
+
+```python
+database: Database[Task] = Database(Task, ...)
+
+task = database.find_by_id("...")
+task.status = "Done"
+task.closed_at = datetime.utcnow()
+database.update(task)
+```
+
+**Note** not all properties can be set yet.
+
+### Creating records
+
+Similarly, you can also create new pages.
+You can use `NotionObject.new()` on any subclass to create new unmanaged instances of that type.
+Then, call `Database.create(...)` to create a new item in the database.
+
+```python
+database: Database[Task] = Database(Task, ...)
+
+task = Task.new()
+task.task = "My New Task"
+task.status = "In progress"
+task.assigned_to = "6aa4d3cd-3928-4f61-9072-f74a3ebfc3ca"
+
+task = database.create(task)
+print(task.id)  # will print the page ID that was created
+```

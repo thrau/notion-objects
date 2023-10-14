@@ -18,11 +18,15 @@ class JSONEncoder(json.JSONEncoder):
 
 
 class _ConverterMixin:
-    def to_dict(self, flat=False) -> dict:
+    def to_dict(self, flat: bool = False) -> dict:
         result = {}
 
         for prop in self._get_properties():
-            value = getattr(self, prop.attr)
+            try:
+                value = getattr(self, prop.attr)
+            except KeyError:
+                # TODO: handle more gracefully
+                continue
             key = prop.attr
 
             if isinstance(value, DateValue):
@@ -49,7 +53,7 @@ class _ConverterMixin:
 
         return result
 
-    def to_json(self, flat=False):
+    def to_json(self, flat: bool = False):
         return json.dumps(self.to_dict(flat=flat), cls=JSONEncoder)
 
     def _get_properties(self) -> Iterable[Property]:
