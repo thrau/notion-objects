@@ -85,7 +85,7 @@ class Database(Generic[_N], Iterable[_N]):
     ):
         self.database_id = database_id
         self.client = client
-        self.type = mapped_type or DynamicNotionObject
+        self.type = mapped_type or self._from_database_properties
 
     def __iter__(self):
         return self.query(query={"page_size": self.default_page_size})
@@ -109,6 +109,14 @@ class Database(Generic[_N], Iterable[_N]):
 
     def _from_database_properties(self, obj: dict) -> DynamicNotionObject:
         return DynamicNotionObject(obj, self.properties)
+
+    @property
+    def id(self) -> str:
+        return self._database_object()["id"]
+
+    @property
+    def url(self) -> str:
+        return self._database_object()["url"]
 
     @lru_cache()
     def _database_object(self):

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 from functools import cached_property
-from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 import dateutil.parser
 
@@ -33,12 +33,21 @@ property_types = [
 ]
 
 _T = TypeVar("_T")
+_P = TypeVar("_P", bound="Property")
 
 
 class Property(Generic[_T]):
+    """
+    A descriptor for mappings between a notion database property and a python attribute.
+
+    """
+
     field: str
+    """The name of the property in the notion database."""
     attr: str
+    """The name of the attribute in the mapped python object."""
     target_type: Optional[Type] = None
+    """The python type this property should be mapped to."""
 
     def __init__(self, field: str = None, object_locator: str = "_obj"):
         self.field = field
@@ -46,11 +55,25 @@ class Property(Generic[_T]):
         self.object_locator = object_locator
 
     def get(self, field: str, obj: dict) -> _T:
+        """
+        Extract from the given field in a notion object the corresponding python value.
+
+        :param field: the notion database property name
+        :param obj: the notion database object
+        :return: a python value representing the value in the notion property
+        """
         raise NotImplementedError(
             f"get operation not implemented for property '{self.__class__.__name__}'"
         )
 
     def set(self, field: str, value: _T, obj: dict):
+        """
+        Maps a given python attribute value to the corresponding notion object property.
+
+        :param field: the notion database property name
+        :param value: the python value to set
+        :param obj: the notion database object
+        """
         raise NotImplementedError(
             f"set operation not implemented for property '{self.__class__.__name__}'"
         )
@@ -96,6 +119,8 @@ class Property(Generic[_T]):
 
 
 class ChangeTracker:
+    id: str
+
     @cached_property
     def __changes__(self) -> Dict[str, Any]:
         return {}
@@ -448,7 +473,7 @@ class People(Property[List[str]]):
         PeopleProperty.set_value(field, value, obj)
 
 
-class Properties:
+class Properties(Iterable[_P]):
     factories: Dict[str, Type[Property]] = {
         "title": TitleText,
         "created_time": CreatedTime,
@@ -465,13 +490,19 @@ class Properties:
         # TODO: ...
     }
 
-    properties: List[Property]
+    properties: List[_P]
 
-    def __init__(self, properties: List[Property]):
+    def __init__(self, properties: List[_P]):
         self.properties = properties
 
     def __iter__(self):
         return self.properties.__iter__()
+
+    def __getitem__(self, item) -> _P:
+        for prop in self.properties:
+            if prop.field == item:
+                return prop
+        raise KeyError(f"No such property field {item}")
 
     @classmethod
     def parse(cls, obj: dict) -> "Properties":
