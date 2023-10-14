@@ -347,31 +347,65 @@ class CreatedTime(Property[datetime]):
         return dateutil.parser.parse(obj["properties"][field]["created_time"])
 
 
-class Date(Property[Optional[date]]):
+_DatePrimitive = Union[str, date, datetime]
+
+_DateVariety = Optional[
+    Union[DateValue, _DatePrimitive, Tuple[Optional[_DatePrimitive], Optional[_DatePrimitive]]]
+]
+
+
+class _DateSetMixin:
+    include_time: bool
+
+    def set_date_value(self, field: str, value: _DateVariety, obj: dict):
+        if isinstance(value, DateValue):
+            return DateProperty.set_value(field, value, obj)
+
+        if isinstance(value, tuple):
+            start, end = value
+        else:
+            start, end = value, None
+
+        if isinstance(start, str):
+            start = dateutil.parser.parse(start)
+        if isinstance(end, str):
+            end = dateutil.parser.parse(end)
+
+        if isinstance(start, datetime) and not self.include_time:
+            start = start.date()
+        if isinstance(end, datetime) and not self.include_time:
+            end = end.date()
+
+        return DateProperty.set_value(field, DateValue(start, end, self.include_time), obj)
+
+
+class Date(Property[Optional[date]], _DateSetMixin):
+    include_time = False
+
     def get(self, field: str, obj: dict) -> Optional[date]:
         if container := obj["properties"][field]["date"]:
             return dateutil.parser.parse(container["start"]).date()
         return None
 
     def set(self, field: str, value: Optional[Union[date, str]], obj: dict):
-        if isinstance(value, str):
-            value = dateutil.parser.parse(value)
-        DateProperty.set_value(field, DateValue(start=value, include_time=False), obj)
+        self.set_date_value(field, value, obj)
 
 
-class DateTime(Property[Optional[datetime]]):
+class DateTime(Property[Optional[datetime]], _DateSetMixin):
+    include_time = True
+
     def get(self, field: str, obj: dict) -> Optional[datetime]:
         if container := obj["properties"][field]["date"]:
             return dateutil.parser.parse(container["start"])
         return None
 
     def set(self, field: str, value: Optional[Union[datetime, str]], obj: dict):
-        if isinstance(value, str):
-            value = dateutil.parser.parse(value)
-        DateProperty.set_value(field, DateValue(start=value, include_time=True), obj)
+        self.set_date_value(field, value, obj)
 
 
-class DateTimeRange(Property[Tuple[Optional[datetime], Optional[datetime]]]):
+class DateTimeRange(Property[Tuple[Optional[datetime], Optional[datetime]]], _DateSetMixin):
+    include_time = True
+
     def get(self, field: str, obj: dict) -> Tuple[Optional[datetime], Optional[datetime]]:
         start, end = None, None
 
@@ -385,8 +419,18 @@ class DateTimeRange(Property[Tuple[Optional[datetime], Optional[datetime]]]):
 
         return start, end
 
+    def set(
+        self,
+        field: str,
+        value: Optional[Tuple[Optional[Union[datetime, str]], Optional[Union[datetime, str]]]],
+        obj: dict,
+    ):
+        self.set_date_value(field, value, obj)
 
-class DateRange(Property[Tuple[Optional[date], Optional[date]]]):
+
+class DateRange(Property[Tuple[Optional[date], Optional[date]]], _DateSetMixin):
+    include_time = False
+
     def get(self, field: str, obj: dict) -> Tuple[Optional[date], Optional[date]]:
         start, end = None, None
 
@@ -399,6 +443,14 @@ class DateRange(Property[Tuple[Optional[date], Optional[date]]]):
                 end = dateutil.parser.parse(date_str).date()
 
         return start, end
+
+    def set(
+        self,
+        field: str,
+        value: Optional[Tuple[Optional[Union[date, str]], Optional[Union[date, str]]]],
+        obj: dict,
+    ):
+        self.set_date_value(field, value, obj)
 
 
 class DateRangeStart(Property[Optional[date]]):

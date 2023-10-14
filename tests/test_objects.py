@@ -1,11 +1,15 @@
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from dateutil.tz import tzutc
 
 from notion_objects import (
+    Date,
+    DateRange,
     DateRangeEnd,
     DateRangeStart,
+    DateTime,
+    DateTimeRange,
     DynamicNotionObject,
     MultiSelect,
     NotionObject,
@@ -33,6 +37,13 @@ class SampleObject(NotionObject):
 
 class SamplePage(Page, SampleObject):
     """Like SampleObject but also includes Page properties"""
+
+
+class MyDateObject(NotionObject):
+    my_date: date = Date("Date")
+    my_date_time: datetime = DateTime("DateTime")
+    my_date_range: tuple[date, date] = DateRange("DateRange")
+    my_date_time_range: tuple[datetime, datetime] = DateTimeRange("DateTimeRange")
 
 
 def test_access_properties():
@@ -174,4 +185,100 @@ def test_dynamic_notion_object_to_json():
         "My select": "a",
         "Phone": "+4369912345678",
         "Tags": ["foobar", "baz"],
+    }
+
+
+def test_date_setters():
+    o = MyDateObject.new()
+
+    date_value = date(2000, 1, 2)
+    date_time_value = datetime(2000, 1, 2, 3, 4, 5)
+
+    o.my_date = date_value
+    o.my_date_time = date_time_value
+    o.my_date_range = date_value, date_value + timedelta(days=1)
+    o.my_date_time_range = date_time_value, date_time_value + timedelta(hours=12)
+
+    assert o.__changes__ == {
+        "Date": {
+            "date": {
+                "end": None,
+                "start": "2000-01-02",
+                "time_zone": None,
+            },
+        },
+        "DateRange": {
+            "date": {
+                "end": "2000-01-03",
+                "start": "2000-01-02",
+                "time_zone": None,
+            },
+        },
+        "DateTime": {
+            "date": {
+                "end": None,
+                "start": "2000-01-02T03:04:05",
+                "time_zone": None,
+            },
+        },
+        "DateTimeRange": {
+            "date": {
+                "end": "2000-01-02T15:04:05",
+                "start": "2000-01-02T03:04:05",
+                "time_zone": None,
+            }
+        },
+    }
+
+    # unset all values
+    o.my_date = None
+    o.my_date_time = None
+    o.my_date_range = None
+    o.my_date_time_range = None
+
+    assert o.__changes__ == {
+        "Date": {"date": None},
+        "DateTime": {"date": None},
+        "DateRange": {"date": None},
+        "DateTimeRange": {"date": None},
+    }
+
+
+def test_date_setters_parsing():
+    o = MyDateObject.new()
+
+    o.my_date = "2000-01-02"
+    o.my_date_time = "2000-01-02T03:04:05"
+    o.my_date_range = "2000-01-02", "2000-01-03"
+    o.my_date_time_range = "2000-01-02T03:04:05", "2000-01-02T15:04:05"
+
+    assert o.__changes__ == {
+        "Date": {
+            "date": {
+                "end": None,
+                "start": "2000-01-02",
+                "time_zone": None,
+            },
+        },
+        "DateRange": {
+            "date": {
+                "end": "2000-01-03",
+                "start": "2000-01-02",
+                "time_zone": None,
+            },
+        },
+        "DateTime": {
+            "date": {
+                "end": None,
+                "start": "2000-01-02T03:04:05",
+                "time_zone": None,
+            },
+        },
+        "DateTimeRange": {
+            "date": {
+                "end": "2000-01-02T15:04:05",
+                "start": "2000-01-02T03:04:05",
+                "time_zone": None,
+            }
+        },
     }
