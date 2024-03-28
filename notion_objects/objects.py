@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Iterable, List
 
 from .encode import _ConverterMixin
-from .properties import ChangeTracker, Properties, Property, RootProperty
+from .properties import ChangeTracker, Id, Properties, Property, RootProperty
 
 
 class NotionClass(type):
@@ -90,6 +90,6 @@ class DynamicNotionObject(_ConverterMixin, ChangeTracker):
 
 
 class Page(NotionObject):
-    id: str = RootProperty("id")
+    id: str = Id()
     created_time: datetime = RootProperty()
     last_edited_time: datetime = RootProperty()

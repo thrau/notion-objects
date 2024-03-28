@@ -134,6 +134,16 @@ class RootProperty(Property[_T]):
         return value
 
 
+class Id(RootProperty[str]):
+    def __init__(self):
+        super().__init__("id")
+
+    def __set__(self, instance, value):
+        if self.object_locator:
+            instance = getattr(instance, self.object_locator)
+        instance[self.field] = value
+
+
 class TitlePlainText(Property[str]):
     def get(self, field: str, obj: dict) -> str:
         items = obj["properties"][field]["title"]
