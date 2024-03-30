@@ -1,13 +1,12 @@
 import copy
-import typing
 import uuid
 from functools import cached_property, lru_cache
-from typing import Callable, Generic, Iterable, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Generic, Iterable, List, Optional, Type, TypeVar, Union, overload
 
 from notion_client import APIResponseError, Client
 
 from .objects import DynamicNotionObject, NotionObject
-from .properties import ChangeTracker, Properties
+from .properties import ChangeTracker, Properties, Property
 
 _N = TypeVar("_N", bound=NotionObject)
 
@@ -44,7 +43,7 @@ class IterableQueryExecutor(Iterable[DatabaseRecord]):
 class Database(Generic[_N], Iterable[_N]):
     default_page_size: int = 100
 
-    @typing.overload
+    @overload
     def __init__(
         self,
         database_id: str,
@@ -54,7 +53,7 @@ class Database(Generic[_N], Iterable[_N]):
         ] = None,
     ): ...
 
-    @typing.overload
+    @overload
     def __init__(
         self,
         mapped_type: Union[Type[_N], Type[DynamicNotionObject], Callable[[DatabaseRecord], _N]],
@@ -134,6 +133,18 @@ class Database(Generic[_N], Iterable[_N]):
 
         return self.type(page)
 
+    def find_unique_by_value(self, property: Property, value: Any) -> Optional[_N]:
+        """
+        Runs ``query_by_value`` and then returns the first element found, or None if the result was epmty.
+
+        :param property: property to look up
+        :param value: the value to match
+        :return: optional result
+        """
+        for item in self.query_by_value(property, value):
+            return item
+        return None
+
     def update(self, page: ChangeTracker):
         try:
             page_id = page.id
@@ -190,3 +201,28 @@ class Database(Generic[_N], Iterable[_N]):
 
         for item in IterableQueryExecutor(self.client, query=query):
             yield factory(item)
+
+    def query_by_value(self, property: Property, value: Any) -> Iterable[_N]:
+        """
+        Builds an equals filter for the given property and value, and returns an iterable of items that match the value.
+        Use the following pattern::
+
+            backlog = Database(BacklogItem, ...)
+
+            for ticket in backlog.query_by_value(BacklogItem.status, "In progress"):
+                ...
+
+        :param property: the property to search for
+        :param value: the value
+        :return: a list of items, can be empty
+        """
+        return self.query(
+            {
+                "filter": {
+                    "property": property.field,
+                    property.type: {
+                        "equals": value,
+                    },
+                },
+            }
+        )

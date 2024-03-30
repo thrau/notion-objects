@@ -128,6 +128,11 @@ class Property(Generic[_T]):
             self.target_type = None
 
     def __get__(self, instance, owner):
+        if instance is None:
+            # instance will be None when accessing the property through class access, for instance ``Page.id``. Here we
+            # return the Property instance itself, rather than the value. This helps with various meta operations.
+            return self
+
         if self.object_locator:
             return self.get(self.field, getattr(instance, self.object_locator))
         else:
