@@ -52,8 +52,7 @@ class Database(Generic[_N], Iterable[_N]):
         mapped_type: Union[
             Type[_N], Type[DynamicNotionObject], Callable[[DatabaseRecord], _N]
         ] = None,
-    ):
-        ...
+    ): ...
 
     @typing.overload
     def __init__(
@@ -61,8 +60,7 @@ class Database(Generic[_N], Iterable[_N]):
         mapped_type: Union[Type[_N], Type[DynamicNotionObject], Callable[[DatabaseRecord], _N]],
         database_id: str,
         client: Client,
-    ):
-        ...
+    ): ...
 
     def __init__(self, *args, **kwargs):
         if len(args) > 0 and type(args[0]) == str:

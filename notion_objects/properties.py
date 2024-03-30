@@ -21,7 +21,7 @@ property_types = [
     "email",
     "phone_number",
     "formula",  # TODO
-    "relation",  # TODO
+    "relation",
     "rollup",  # TODO
     "created_time",
     "created_by",  # TODO
@@ -181,6 +181,22 @@ class TitleText(Property[str]):
                 }
             ]
         }
+
+
+class Relation(Property[List[str]]):
+
+    def get(self, field: str, obj: dict) -> List[str]:
+        items = obj["properties"][field]["relation"]
+        return [item["id"] for item in items]
+
+    def set(self, field: str, value: str | Iterable[str], obj: dict):
+        if isinstance(value, str):
+            ids = [value]
+        else:
+            ids = value
+
+        value = obj.setdefault(field, {})
+        value["relation"] = [{"id": id_} for id_ in ids]
 
 
 class Text(Property[str]):
@@ -549,6 +565,7 @@ class Properties(Iterable[_P]):
         "email": Email,
         "checkbox": Checkbox,
         "number": Number,
+        "relation": Relation,
         # TODO: ...
     }
 
