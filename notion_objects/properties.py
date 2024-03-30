@@ -1,7 +1,19 @@
 import uuid
 from datetime import date, datetime
 from functools import cached_property
-from typing import Any, Dict, Generic, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import dateutil.parser
 
@@ -32,6 +44,30 @@ property_types = [
     "external",  # TODO
 ]
 
+PropertyType = Literal[
+    "checkbox",
+    "created_by",
+    "created_time",
+    "date",
+    "email",
+    "files",
+    "formula",
+    "last_edited_by",
+    "last_edited_time",
+    "multi_select",
+    "number",
+    "people",
+    "phone_number",
+    "relation",
+    "rich_text",
+    "rollup",
+    "select",
+    "status",
+    "title",
+    "url",
+]
+"""The notion data type of a property, see https://developers.notion.com/reference/property-object."""
+
 _T = TypeVar("_T")
 _P = TypeVar("_P", bound="Property")
 
@@ -46,6 +82,8 @@ class Property(Generic[_T]):
     """The name of the property in the notion database."""
     attr: str
     """The name of the attribute in the mapped python object."""
+    type: Optional[PropertyType] = None
+    """The notion data type of a property."""
     target_type: Optional[Type] = None
     """The python type this property should be mapped to."""
 
@@ -145,15 +183,17 @@ class Id(RootProperty[str]):
 
 
 class TitlePlainText(Property[str]):
+    type = "title"
+
     def get(self, field: str, obj: dict) -> str:
-        items = obj["properties"][field]["title"]
+        items = obj["properties"][field][self.type]
         if items:
             return "".join([item["plain_text"] for item in items])
         return ""
 
     def set(self, field: str, value: Optional[str], obj: dict):
         obj[field] = {
-            "title": [
+            self.type: [
                 {
                     "type": "text",
                     "text": {"content": value},
@@ -164,6 +204,8 @@ class TitlePlainText(Property[str]):
 
 
 class TitleText(Property[str]):
+    type = "title"
+
     def get(self, field: str, obj: dict) -> str:
         items = obj["properties"][field]["title"]
         if items:
@@ -184,9 +226,10 @@ class TitleText(Property[str]):
 
 
 class Relation(Property[List[str]]):
+    type = "relation"
 
     def get(self, field: str, obj: dict) -> List[str]:
-        items = obj["properties"][field]["relation"]
+        items = obj["properties"][field][self.type]
         return [item["id"] for item in items]
 
     def set(self, field: str, value: str | Iterable[str], obj: dict):
@@ -196,10 +239,12 @@ class Relation(Property[List[str]]):
             ids = value
 
         value = obj.setdefault(field, {})
-        value["relation"] = [{"id": id_} for id_ in ids]
+        value[self.type] = [{"id": id_} for id_ in ids]
 
 
 class Text(Property[str]):
+    type = "rich_text"
+
     def get(self, field: str, obj: dict) -> str:
         items = obj["properties"][field]["rich_text"]
 
@@ -234,33 +279,32 @@ class Text(Property[str]):
         }
 
 
-class Email(Property[Optional[str]]):
+class _SimpleStringProperty(Property[Optional[str]]):
+
     def get(self, field: str, obj: dict) -> Optional[str]:
-        return obj["properties"][field]["email"]
+        return obj["properties"][field][self.type]
 
     def set(self, field: str, value: Optional[str], obj: dict):
-        obj[field] = {"email": value}
+        obj[field] = {self.type: value}
 
 
-class URL(Property[Optional[str]]):
-    def get(self, field: str, obj: dict) -> Optional[str]:
-        return obj["properties"][field]["url"]
-
-    def set(self, field: str, value: Optional[str], obj: dict):
-        obj[field] = {"url": value}
+class Email(_SimpleStringProperty):
+    type = "email"
 
 
-class Phone(Property[Optional[str]]):
-    def get(self, field: str, obj: dict) -> Optional[str]:
-        return obj["properties"][field]["phone_number"]
+class URL(_SimpleStringProperty):
+    type = "url"
 
-    def set(self, field: str, value: Optional[str], obj: dict):
-        obj[field] = {"phone_number": value}
+
+class Phone(_SimpleStringProperty):
+    type = "phone_number"
 
 
 class Number(Property[Optional[Union[float, int]]]):
+    type = "number"
+
     def get(self, field: str, obj: dict) -> Optional[Union[float, int]]:
-        return obj["properties"][field]["number"]
+        return obj["properties"][field][self.type]
 
     def set(self, field: str, value: Optional[Union[float, int, str]], obj: dict):
         if isinstance(value, str):
@@ -268,58 +312,70 @@ class Number(Property[Optional[Union[float, int]]]):
                 value = float(value)
             else:
                 value = int(value)
-        obj[field] = {"number": value}
+        obj[field] = {self.type: value}
 
 
 class Integer(Property[Optional[int]]):
+    type = "number"
+
     def get(self, field: str, obj: dict) -> Optional[int]:
-        if value := obj["properties"][field]["number"]:
+        if value := obj["properties"][field][self.type]:
             return int(value)
 
     def set(self, field: str, value: Optional[Union[int, str]], obj: dict):
         if isinstance(value, str):
             value = int(value)
-        obj[field] = {"number": value}
+        obj[field] = {self.type: value}
 
 
 class Checkbox(Property[bool]):
+    type = "checkbox"
+
     def get(self, field: str, obj: dict) -> bool:
-        return obj["properties"][field]["checkbox"] in [True, "true"]
+        return obj["properties"][field][self.type] in [True, "true"]
 
     def set(self, field: str, value: Optional[bool], obj: dict):
-        obj[field] = {"checkbox": value}
+        obj[field] = {self.type: value}
 
 
 class Select(Property[Optional[str]]):
+    type = "select"
+
     def get(self, field: str, obj: dict) -> Optional[str]:
-        select = obj["properties"][field]["select"]
+        select = obj["properties"][field][self.type]
         if select is None:
             return None
         return select["name"]
 
     def set(self, field: str, value: Optional[str], obj: dict):
-        obj[field] = {"select": {"name": value} if value is not None else None}
+        obj[field] = {self.type: {"name": value} if value is not None else None}
 
 
 class MultiSelect(Property[List[str]]):
+    type = "multi_select"
+
     def get(self, field: str, obj: dict) -> List[str]:
-        return [s["name"] for s in obj["properties"][field].get("multi_select", [])]
+        return [s["name"] for s in obj["properties"][field].get(self.type, [])]
 
     def set(self, field: str, value: Optional[List[str]], obj: dict):
-        obj[field] = {"multi_select": [{"name": v} for v in value] if value is not None else None}
+        obj[field] = {self.type: [{"name": v} for v in value] if value is not None else None}
 
 
 class Status(Property[Optional[str]]):
+    type = "status"
+
     def get(self, field: str, obj: dict) -> Optional[str]:
-        if status := obj["properties"][field]["status"]:
+        if status := obj["properties"][field][self.type]:
             return status["name"]
 
     def set(self, field: str, value: Optional[str], obj: dict):
         status = {"name": value} if value is not None else {}
-        obj[field] = {"status": status}
+        obj[field] = {self.type: status}
 
 
 class DateProperty(Property[DateValue]):
+    type = "date"
+
     def get(self, field: str, obj: dict) -> DateValue:
         return self.get_value(field, obj)
 
@@ -369,8 +425,10 @@ class DateProperty(Property[DateValue]):
 
 
 class CreatedTime(Property[datetime]):
+    type = "created_time"
+
     def get(self, field: str, obj: dict) -> datetime:
-        return dateutil.parser.parse(obj["properties"][field]["created_time"])
+        return dateutil.parser.parse(obj["properties"][field][self.type])
 
 
 _DatePrimitive = Union[str, date, datetime]
@@ -406,10 +464,11 @@ class _DateSetMixin:
 
 
 class Date(Property[Optional[date]], _DateSetMixin):
+    type = "date"
     include_time = False
 
     def get(self, field: str, obj: dict) -> Optional[date]:
-        if container := obj["properties"][field]["date"]:
+        if container := obj["properties"][field][self.type]:
             return dateutil.parser.parse(container["start"]).date()
         return None
 
@@ -418,6 +477,7 @@ class Date(Property[Optional[date]], _DateSetMixin):
 
 
 class DateTime(Property[Optional[datetime]], _DateSetMixin):
+    type = "date"
     include_time = True
 
     def get(self, field: str, obj: dict) -> Optional[datetime]:
@@ -430,6 +490,8 @@ class DateTime(Property[Optional[datetime]], _DateSetMixin):
 
 
 class DateTimeRange(Property[Tuple[Optional[datetime], Optional[datetime]]], _DateSetMixin):
+    type = "date"
+
     include_time = True
 
     def get(self, field: str, obj: dict) -> Tuple[Optional[datetime], Optional[datetime]]:
@@ -455,6 +517,7 @@ class DateTimeRange(Property[Tuple[Optional[datetime], Optional[datetime]]], _Da
 
 
 class DateRange(Property[Tuple[Optional[date], Optional[date]]], _DateSetMixin):
+    type = "date"
     include_time = False
 
     def get(self, field: str, obj: dict) -> Tuple[Optional[date], Optional[date]]:
@@ -480,6 +543,8 @@ class DateRange(Property[Tuple[Optional[date], Optional[date]]], _DateSetMixin):
 
 
 class DateRangeStart(Property[Optional[date]]):
+    type = "date"
+
     def get(self, field: str, obj: dict) -> Optional[date]:
         container = obj["properties"][field]["date"]
         if container is None:
@@ -490,6 +555,8 @@ class DateRangeStart(Property[Optional[date]]):
 
 
 class DateRangeEnd(Property[Optional[date]]):
+    type = "date"
+
     def get(self, field: str, obj: dict) -> Optional[date]:
         container = obj["properties"][field]["date"]
         if container is None:
@@ -500,6 +567,8 @@ class DateRangeEnd(Property[Optional[date]]):
 
 
 class PeopleProperty(Property[List[UserValue]]):
+    type = "people"
+
     def get(self, field: str, obj: dict) -> List[UserValue]:
         return self.get_value(field, obj)
 
@@ -531,6 +600,8 @@ class PeopleProperty(Property[List[UserValue]]):
 
 
 class Person(Property[Optional[str]]):
+    type = "people"
+
     def get(self, field: str, obj: dict) -> Optional[str]:
         people = PeopleProperty.get_value(field, obj)
         if not people:
@@ -543,6 +614,8 @@ class Person(Property[Optional[str]]):
 
 
 class People(Property[List[str]]):
+    type = "people"
+
     def get(self, field: str, obj: dict) -> List[str]:
         people = PeopleProperty.get_value(field, obj)
         return [person.name or person.id for person in people]
@@ -552,7 +625,7 @@ class People(Property[List[str]]):
 
 
 class Properties(Iterable[_P]):
-    factories: Dict[str, Type[Property]] = {
+    factories: Dict[PropertyType, Type[Property]] = {
         "title": TitleText,
         "created_time": CreatedTime,
         "select": Select,
