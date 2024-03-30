@@ -17,6 +17,7 @@ from typing import (
 
 import dateutil.parser
 
+from . import rich_text
 from .values import DateValue, UserValue
 
 property_types = [
@@ -258,30 +259,40 @@ class Text(Property[str]):
 
         return ""
 
-    def set(self, field: str, value: Optional[str], obj: dict):
+    def set(self, field: str, value: Optional[Union[str, rich_text.RichTextObject]], obj: dict):
         if value is None:
             obj[field] = {"rich_text": []}
             return
 
+        if not isinstance(value, rich_text.RichTextObject):
+            value = rich_text.RichText(value)
+
         # TODO: allow rich-text
-        obj[field] = {
-            "rich_text": [
-                {
-                    "type": "text",
-                    "text": {"content": value},
-                    "annotations": {
-                        "bold": False,
-                        "italic": False,
-                        "strikethrough": False,
-                        "underline": False,
-                        "code": False,
-                        "color": "default",
-                    },
-                    "plain_text": value,
-                    "href": None,
-                }
-            ]
-        }
+        obj[field] = {"rich_text": [value.to_dict()]}
+
+
+class RichTextProperty(Property[List[rich_text.RichTextObject]]):
+    type = "rich_text"
+
+    def get(self, field: str, obj: dict) -> List[rich_text.RichTextObject]:
+        items = obj["properties"][field][self.type]
+        if items:
+            return [rich_text.parse(item) for item in items]
+        return []
+
+    def set(
+        self,
+        field: str,
+        value: Optional[Union[List[rich_text.RichTextObject], rich_text.RichTextObject]],
+        obj: dict,
+    ):
+        if not value:
+            obj[field] = {self.type: []}
+            return
+        if isinstance(value, rich_text.RichTextObject):
+            value = [value]
+
+        obj[field] = {"rich_text": [rt.to_dict() for rt in value]}
 
 
 class _SimpleStringProperty(Property[Optional[str]]):
