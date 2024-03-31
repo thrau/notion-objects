@@ -117,6 +117,9 @@ class RichTextObject:
     def __repr__(self):
         return str(self.to_dict())
 
+    def __eq__(self, other):
+        return self.to_dict() == other.to_dict()
+
 
 class RichText(RichTextObject):
     type = "text"
