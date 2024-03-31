@@ -238,7 +238,7 @@ class Relation(Property[List[str]]):
         items = obj["properties"][field][self.type]
         return [item["id"] for item in items]
 
-    def set(self, field: str, value: str | Iterable[str], obj: dict):
+    def set(self, field: str, value: Union[str, Iterable[str]], obj: dict):
         if isinstance(value, str):
             ids = [value]
         else:
