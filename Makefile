@@ -5,9 +5,9 @@ VENV_RUN = . $(VENV_ACTIVATE)
 
 venv: $(VENV_ACTIVATE)
 
-$(VENV_ACTIVATE): setup.py setup.cfg pyproject.toml
+$(VENV_ACTIVATE): setup.cfg pyproject.toml
 	test -d .venv || $(VENV_BIN) .venv
-	$(VENV_RUN); pip install --upgrade pip setuptools wheel
+	$(VENV_RUN); pip install --upgrade pip setuptools wheel build
 	$(VENV_RUN); pip install -e .[test]
 	touch $(VENV_DIR)/bin/activate
 
@@ -34,7 +34,7 @@ coveralls: venv
 	$(VENV_RUN); coveralls
 
 dist: venv
-	$(VENV_RUN); python setup.py sdist bdist_wheel
+	$(VENV_RUN); python -m build
 
 deploy: clean-dist venv test dist
 	$(VENV_RUN); pip install --upgrade twine; twine upload dist/*
