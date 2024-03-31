@@ -30,6 +30,7 @@ def test_run_page(notion_client, test_run_database_id):
         properties={
             "Name": {"title": [{"text": {"content": name}}]},
             "Version": {"rich_text": [{"text": {"content": f"{notion_objects.__version__}"}}]},
+            "Ref": {"rich_text": [{"text": {"content": f"{os.getenv('GITHUB_REF', '')}"}}]},
         },
     )
 
