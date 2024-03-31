@@ -38,7 +38,7 @@ def test_run_page(notion_client, test_run_database_id):
     # notion_client.pages.update(page["id"], archived=True)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def create_database(notion_client, test_run_page):
     def _create(**kwargs):
         kwargs = copy.deepcopy(kwargs)

@@ -31,13 +31,6 @@ jobs:
         run: |
           make test-unit
 
-      - name: Run integration tests
-        env:
-          NOTION_OBJECTS_TOKEN: ${{ secrets.NOTION_OBJECTS_TOKEN }}
-          NOTION_OBJECTS_TEST_DATABASE: ${{ secrets.NOTION_OBJECTS_TEST_DATABASE }}
-        run: |
-          make test-integration
-
   integration-tests:
     runs-on: "ubuntu-latest"
 
