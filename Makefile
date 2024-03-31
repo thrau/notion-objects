@@ -19,8 +19,13 @@ clean:
 format:
 	$(VENV_RUN); python -m isort .; python -m black .
 
-test: venv
-	$(VENV_RUN); python -m pytest --cov notion_objects/
+test: test-unit
+
+test-unit: venv
+	$(VENV_RUN); python -m pytest tests/unit
+
+test-integration: venv
+	$(VENV_RUN); python -m pytest tests/integration
 
 test-coverage: venv
 	$(VENV_RUN); coverage run --source=notion_objects -m pytest tests && coverage lcov -o .coverage.lcov

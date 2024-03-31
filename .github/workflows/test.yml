@@ -11,7 +11,7 @@ on:
       - main
 
 jobs:
-  test:
+  unit-tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -27,27 +27,25 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Download LocalStack
-        run: docker pull localstack/localstack
-
-      - name: Run tests
+      - name: Run unit tests
         run: |
-          make test-coverage
+          make test-unit
 
-      - name: Coveralls Parallel
-        uses: coverallsapp/github-action@master
+  integration-tests:
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          flag-name: run-${{ matrix.os }}-${{ matrix.python_version }}
-          path-to-lcov: ./.coverage.lcov
-          parallel: true
+          python-version: "3.11"
 
-#  report:
-#    needs: test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Report coveralls
-#        uses: coverallsapp/github-action@master
-#        with:
-#          github-token: ${{ secrets.GITHUB_TOKEN }}
-#          parallel-finished: true
+      - name: Run integration tests
+        env:
+          NOTION_OBJECTS_TOKEN: ${{ secrets.NOTION_OBJECTS_TOKEN }}
+          NOTION_OBJECTS_TEST_DATABASE: ${{ secrets.NOTION_OBJECTS_TEST_DATABASE }}
+        run: |
+          make test-integration

@@ -3,7 +3,7 @@ import json
 from datetime import date, datetime
 from typing import Iterable
 
-from .properties import DateRange, DateTimeRange, Property
+from .properties import DateRange, DateTimeRange, Property, RichTextProperty
 from .values import DateValue, UserValue
 
 
@@ -48,6 +48,8 @@ class _ConverterMixin:
                     result[f"{key}_end"] = value[1]
                 else:
                     result[key] = {"start": value[0], "end": value[1]}
+            elif isinstance(prop, RichTextProperty):
+                result[key] = "".join([text.plain_text for text in value])
             else:
                 result[key] = value
 

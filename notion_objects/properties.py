@@ -289,14 +289,15 @@ class RichTextProperty(Property[List[rich_text.RichTextObject]]):
         if not value:
             obj[field] = {self.type: []}
             return
-        if isinstance(value, rich_text.RichTextObject):
+        if isinstance(value, str):
+            value = [rich_text.RichText(value)]
+        elif isinstance(value, rich_text.RichTextObject):
             value = [value]
 
         obj[field] = {"rich_text": [rt.to_dict() for rt in value]}
 
 
 class _SimpleStringProperty(Property[Optional[str]]):
-
     def get(self, field: str, obj: dict) -> Optional[str]:
         return obj["properties"][field][self.type]
 
