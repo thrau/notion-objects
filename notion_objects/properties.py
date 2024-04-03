@@ -18,7 +18,7 @@ from typing import (
 import dateutil.parser
 
 from . import rich_text
-from .values import DateValue, UserValue
+from .values import DateValue, UniqueIdValue, UserValue
 
 property_types = [
     "title",
@@ -43,6 +43,7 @@ property_types = [
     "status",
     "emoji",  # TODO
     "external",  # TODO
+    "unique_id",
 ]
 
 PropertyType = Literal[
@@ -65,6 +66,7 @@ PropertyType = Literal[
     "select",
     "status",
     "title",
+    "unique_id",
     "url",
 ]
 """The notion data type of a property, see https://developers.notion.com/reference/property-object."""
@@ -330,6 +332,16 @@ class Number(Property[Optional[Union[float, int]]]):
             else:
                 value = int(value)
         obj[field] = {self.type: value}
+
+
+class UniqueId(Property[UniqueIdValue]):
+    type = "unique_id"
+
+    def get(self, field: str, obj: dict) -> UniqueIdValue:
+        return UniqueIdValue(**obj["properties"][field][self.type])
+
+    def set(self, field: str, value: _T, obj: dict):
+        raise NotImplementedError("setting unique IDs is not possible yet")
 
 
 class Integer(Property[Optional[int]]):

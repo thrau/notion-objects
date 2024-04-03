@@ -26,3 +26,12 @@ class UserValue:
             return self.name
         else:
             return self.id
+
+
+@dataclass
+class UniqueIdValue:
+    prefix: str
+    number: int
+
+    def __str__(self):
+        return f"{self.prefix}-{self.number}"

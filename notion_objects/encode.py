@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Iterable
 
 from .properties import DateRange, DateTimeRange, Property, RichTextProperty
-from .values import DateValue, UserValue
+from .values import DateValue, UniqueIdValue, UserValue
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -29,7 +29,9 @@ class _ConverterMixin:
                 continue
             key = prop.attr
 
-            if isinstance(value, DateValue):
+            if isinstance(value, UniqueIdValue):
+                result[key] = str(value)
+            elif isinstance(value, DateValue):
                 # TODO: timezone
                 if flat:
                     result[f"{key}_start"] = value.start
