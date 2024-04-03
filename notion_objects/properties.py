@@ -217,7 +217,7 @@ class TitleText(Property[str]):
     def get(self, field: str, obj: dict) -> str:
         items = obj["properties"][field]["title"]
         if items:
-            return "".join([item["text"]["content"] for item in items])
+            return "".join([item["plain_text"] for item in items])
         return ""
 
     def set(self, field: str, value: Optional[str], obj: dict):
