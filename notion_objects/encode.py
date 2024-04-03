@@ -55,8 +55,8 @@ class _ConverterMixin:
 
         return result
 
-    def to_json(self, flat: bool = False):
-        return json.dumps(self.to_dict(flat=flat), cls=JSONEncoder)
+    def to_json(self, flat: bool = False, **kwargs):
+        return json.dumps(self.to_dict(flat=flat), cls=JSONEncoder, **kwargs)
 
     def _get_properties(self) -> Iterable[Property]:
         raise NotImplementedError
