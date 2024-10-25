@@ -630,28 +630,24 @@ class People(Property[List[str]]):
         PeopleProperty.set_value(field, value, obj)
 
 
-class Formula(Property[Union[str,float,bool,DateValue]]):
+class Formula(Property[Union[str, float, bool, DateValue]]):
     type = "formula"
 
     def get(self, field: str, obj: dict) -> str:
         formula = obj["properties"][field][self.type]
-        formula_type = formula['type']
+        formula_type = formula["type"]
 
-        if formula_type == 'string':
-            return formula['string']
-        elif formula_type == 'number':
-            return formula['number']
-        elif formula_type == 'boolean':
-            return formula['boolean']
-        elif formula_type == 'date':
-            return DateValue.from_dict(formula['date'])
-        
+        if formula_type == "string":
+            return formula["string"]
+        elif formula_type == "number":
+            return formula["number"]
+        elif formula_type == "boolean":
+            return formula["boolean"]
+        elif formula_type == "date":
+            return DateValue.from_dict(formula["date"])
+
     def set(self, field: str, value: Optional[str], obj: dict):
-        obj[field] = {
-            self.type: {
-                "expression": value
-            }
-        }
+        obj[field] = {self.type: {"expression": value}}
 
 
 class Properties(Iterable[_P]):

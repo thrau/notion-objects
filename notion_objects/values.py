@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, datetime, tzinfo
 from typing import Optional, Union
+
 import dateutil
 
 
@@ -14,7 +15,7 @@ class DateValue:
     @property
     def is_range(self) -> bool:
         return self.end is not None
-    
+
     @classmethod
     def from_dict(cls, date_obj: dict) -> "DateValue":
         # TODO: timezone
