@@ -33,7 +33,7 @@ property_types = [
     "url",
     "email",
     "phone_number",
-    "formula",  # TODO
+    "formula",
     "relation",
     "rollup",  # TODO
     "created_time",
@@ -413,30 +413,7 @@ class DateProperty(Property[DateValue]):
 
     @staticmethod
     def get_value(field: str, obj: dict) -> DateValue:
-        # TODO: timezone
-
-        start, end = None, None
-        include_time = False
-
-        if container := obj["properties"][field]["date"]:
-            if date_str := container["start"]:
-                start = dateutil.parser.parse(date_str)
-                if len(date_str) > 10:
-                    include_time = True
-
-        if container := obj["properties"][field]["date"]:
-            if date_str := container["end"]:
-                end = dateutil.parser.parse(date_str)
-                if len(date_str) > 10:
-                    include_time = True
-
-        if not include_time:
-            if start:
-                start = start.date()
-            if end:
-                end = end.date()
-
-        return DateValue(start, end, include_time, None)
+        return DateValue.from_dict(obj["properties"][field]["date"])
 
     @staticmethod
     def set_value(field: str, value: DateValue, obj: dict):
@@ -653,6 +630,30 @@ class People(Property[List[str]]):
         PeopleProperty.set_value(field, value, obj)
 
 
+class Formula(Property[Union[str,float,bool,DateValue]]):
+    type = "formula"
+
+    def get(self, field: str, obj: dict) -> str:
+        formula = obj["properties"][field][self.type]
+        formula_type = formula['type']
+
+        if formula_type == 'string':
+            return formula['string']
+        elif formula_type == 'number':
+            return formula['number']
+        elif formula_type == 'boolean':
+            return formula['boolean']
+        elif formula_type == 'date':
+            return DateValue.from_dict(formula['date'])
+        
+    def set(self, field: str, value: Optional[str], obj: dict):
+        obj[field] = {
+            self.type: {
+                "expression": value
+            }
+        }
+
+
 class Properties(Iterable[_P]):
     factories: Dict[PropertyType, Type[Property]] = {
         "title": TitleText,
@@ -668,6 +669,7 @@ class Properties(Iterable[_P]):
         "checkbox": Checkbox,
         "number": Number,
         "relation": Relation,
+        "formula": Formula,
         # TODO: ...
     }
 
