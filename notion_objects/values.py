@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, tzinfo
 from typing import Optional, Union
 
+import dateutil
+
 
 @dataclass
 class DateValue:
@@ -13,6 +15,28 @@ class DateValue:
     @property
     def is_range(self) -> bool:
         return self.end is not None
+
+    @classmethod
+    def from_dict(cls, date_obj: dict) -> "DateValue":
+        # TODO: timezone
+
+        start, end = None, None
+        include_time = False
+
+        if date_obj:
+            if date_str := date_obj.get("start"):
+                start = dateutil.parser.parse(date_str)
+                if len(date_str) > 10:
+                    include_time = True
+                    start = start.date()
+
+            if date_str := date_obj.get("end"):
+                end = dateutil.parser.parse(date_str)
+                if len(date_str) > 10:
+                    include_time = True
+                    end = end.date()
+
+        return cls(start, end, include_time, None)
 
 
 @dataclass

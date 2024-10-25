@@ -6,6 +6,7 @@ from notion_objects import (
     Checkbox,
     Database,
     Date,
+    Formula,
     MultiSelect,
     Number,
     Page,
@@ -46,6 +47,7 @@ test_db_properties = {
         },
     },
     "+1": {"people": {}},
+    "Rounded Price": {"formula": {"expression": 'round(prop("Price"))'}},
 }
 
 
@@ -59,6 +61,7 @@ class FoodRecord(Page):
     store_availability = MultiSelect("Store availability")
     upvoted = People("+1")
     description_plain = Text("Description")
+    rounded_price = Formula("Rounded Price")
 
 
 @pytest.fixture()
@@ -97,6 +100,7 @@ def test_create_and_list_records(food_db):
     assert records[0].food_group is None
     assert records[0].store_availability == []
     assert records[0].Price is None
+    assert records[0].rounded_price is None
     assert records[0].last_ordered is None
     assert records[0].description == []
     assert records[0].description_plain == ""
@@ -106,6 +110,7 @@ def test_create_and_list_records(food_db):
     assert records[1].food_group == "Fruit"
     assert records[1].store_availability == ["Duc Loi Market", "Rainbow Grocery"]
     assert records[1].Price == 123.45
+    assert records[1].rounded_price == 123
     assert records[1].last_ordered == now
     assert records[1].description_plain == "hot food record"
     assert records[1].description[0].to_dict() == {
@@ -157,4 +162,5 @@ def test_create_to_dict(food_db):
         "name": "My New Food Record",
         "store_availability": ["Duc Loi Market", "Rainbow Grocery"],
         "upvoted": [],
+        "rounded_price": 123,
     }
