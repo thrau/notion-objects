@@ -693,6 +693,7 @@ class Properties(Iterable[_P]):
 
         result = [
             RootProperty("id"),
+            RootProperty("url"),
             created_time,
             last_edited_time,
         ]
