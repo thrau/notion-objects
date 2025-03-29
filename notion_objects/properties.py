@@ -18,7 +18,7 @@ from typing import (
 import dateutil.parser
 
 from . import rich_text
-from .values import DateValue, UniqueIdValue, UserValue
+from .values import DateValue, FileValue, UniqueIdValue, UserValue
 
 property_types = [
     "title",
@@ -28,7 +28,7 @@ property_types = [
     "multi_select",
     "date",
     "people",
-    "files",  # TODO
+    "files",
     "checkbox",
     "url",
     "email",
@@ -650,6 +650,30 @@ class Formula(Property[Union[str, float, bool, DateValue]]):
         raise NotImplementedError("cannot update the formula of individual records")
 
 
+class Files(Property[List[FileValue]]):
+    type = "files"
+
+    def get(self, field: str, obj: dict) -> List[FileValue]:
+        return Files.get_value(field, obj)
+
+    def set(self, field: str, value: Optional[str], obj: dict):
+        raise NotImplementedError("setting and uploading files is currently not supported")
+
+    @staticmethod
+    def get_value(field: str, obj: dict) -> List[FileValue]:
+        values = []
+        for record in obj["properties"][field][Files.type]:
+            file = record.get("file", {})
+            values.append(
+                FileValue(
+                    name=record["name"],
+                    url=file.get("url"),
+                    expiry_time=dateutil.parser.parse(file.get("expiry_time")),
+                )
+            )
+        return values
+
+
 class Properties(Iterable[_P]):
     factories: Dict[PropertyType, Type[Property]] = {
         "title": TitleText,
@@ -666,6 +690,7 @@ class Properties(Iterable[_P]):
         "number": Number,
         "relation": Relation,
         "formula": Formula,
+        "files": Files,
         # TODO: ...
     }
 

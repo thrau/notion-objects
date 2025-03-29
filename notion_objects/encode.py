@@ -3,8 +3,8 @@ import json
 from datetime import date, datetime
 from typing import Iterable
 
-from .properties import DateRange, DateTimeRange, Property, RichTextProperty
-from .values import DateValue, UniqueIdValue, UserValue
+from .properties import DateRange, DateTimeRange, Files, Property, RichTextProperty
+from .values import DateValue, FileValue, UniqueIdValue, UserValue
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -44,6 +44,13 @@ class _ConverterMixin:
                     result[f"{key}_name"] = value.name
                 else:
                     result[key] = dataclasses.asdict(value)
+            elif isinstance(prop, Files):
+                if flat:
+                    for i, f in enumerate(value):
+                        result[f"{key}_{i}_name"] = value.name
+                        result[f"{key}_{i}_url"] = value.url
+                else:
+                    result[key] = [dataclasses.asdict(f) for f in value]
             elif isinstance(prop, (DateRange, DateTimeRange)):
                 if flat:
                     result[f"{key}_start"] = value[0]

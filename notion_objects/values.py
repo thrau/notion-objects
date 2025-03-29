@@ -59,3 +59,13 @@ class UniqueIdValue:
 
     def __str__(self):
         return f"{self.prefix}-{self.number}"
+
+
+@dataclass
+class FileValue:
+    name: str
+    url: str
+    expiry_time: datetime
+
+    def __str__(self):
+        return self.name
